@@ -27,10 +27,17 @@ namespace AutoUpdaterDotNET
         private void DownloadUpdateDialogLoad(object sender, EventArgs e)
         {
             _webClient = new WebClient {CachePolicy = new HttpRequestCachePolicy(HttpRequestCacheLevel.NoCacheNoStore)};
-
             var uri = new Uri(_downloadURL);
 
             _tempPath = Path.Combine(Path.GetTempPath(), GetFileName(_downloadURL));
+
+            if (AutoUpdater.Credential != null)
+            {
+                var credCache = new CredentialCache();
+                credCache.Add(uri, "Basic", AutoUpdater.Credential);
+                //_webClient.UseDefaultCredentials = false;
+                _webClient.Credentials = credCache;
+            }
 
             _webClient.DownloadProgressChanged += OnDownloadProgressChanged;
 
@@ -92,7 +99,12 @@ namespace AutoUpdaterDotNET
                 var uri = new Uri(url);
                 if (uri.Scheme.Equals(Uri.UriSchemeHttp) || uri.Scheme.Equals(Uri.UriSchemeHttps))
                 {
-                    var httpWebRequest = (HttpWebRequest)WebRequest.Create(uri);
+                    var req = WebRequest.Create(url);
+                    if (AutoUpdater.Credential != null)
+                    {
+                        req.Credentials = AutoUpdater.Credential;
+                    }
+                    var httpWebRequest = (HttpWebRequest)req;
                     httpWebRequest.CachePolicy = new HttpRequestCachePolicy(HttpRequestCacheLevel.NoCacheNoStore);
                     httpWebRequest.Method = httpWebRequestMethod;
                     httpWebRequest.AllowAutoRedirect = false;
@@ -126,7 +138,7 @@ namespace AutoUpdaterDotNET
                 }
                 return fileName;
             }
-            catch (WebException)
+            catch (WebException ex)
             {
                 return GetFileName(url, "GET");
             }
