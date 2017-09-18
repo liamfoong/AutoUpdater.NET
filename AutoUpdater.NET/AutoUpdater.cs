@@ -69,6 +69,11 @@ namespace AutoUpdaterDotNET
         public static String AppCastURL;
 
         /// <summary>
+        ///     Crediential in .htaccess file for extra security if there is any
+        /// </summary>
+        public static NetworkCredential Credential;
+
+        /// <summary>
         ///     Opens the download url in default browser if true. Very usefull if you have portable application.
         /// </summary>
         public static bool OpenDownloadPage;
@@ -246,6 +251,8 @@ namespace AutoUpdaterDotNET
             InstalledVersion = mainAssembly.GetName().Version;
 
             var webRequest = WebRequest.Create(AppCastURL);
+            if (Credential != null)
+                webRequest.Credentials = Credential;
             webRequest.CachePolicy = new HttpRequestCachePolicy(HttpRequestCacheLevel.NoCacheNoStore);
 
             WebResponse webResponse;
@@ -254,7 +261,7 @@ namespace AutoUpdaterDotNET
             {
                 webResponse = webRequest.GetResponse();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 e.Cancel = false;
                 return;

@@ -6,6 +6,8 @@ using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
 using Microsoft.Win32;
+using System.Net;
+using System.Net.Cache;
 
 namespace AutoUpdaterDotNET
 {
@@ -45,8 +47,8 @@ namespace AutoUpdaterDotNET
 
         public sealed override string Text
         {
-            get => base.Text;
-            set => base.Text = value;
+            get {return base.Text; } 
+            set {base.Text = value; } 
         }
 
         private void UseLatestIE()
@@ -86,7 +88,11 @@ namespace AutoUpdaterDotNET
         {
             if (!HideReleaseNotes)
             {
-                webBrowser.Navigate(AutoUpdater.ChangeLogURL);
+                string hdr = "";
+                if (AutoUpdater.Credential != null)
+                    hdr = "Authorization: Basic " + Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes(AutoUpdater.Credential.UserName + ":" + 
+                                                                            AutoUpdater.Credential.Password)) + System.Environment.NewLine;
+                webBrowser.Navigate(AutoUpdater.ChangeLogURL, null, null, hdr);
             }
         }
 
