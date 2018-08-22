@@ -116,6 +116,29 @@ timer.Elapsed += delegate
 };
 timer.Start();
 ````
+## Handling parsing logic manually
+
+If you want to use other format instead of XML as a AppCast file then you need to handle the parsing logic by subscribing to ParseUpdateInfoEvent. You can do it as follows.
+
+````csharp
+dynamic json = JsonConvert.DeserializeObject(args.RemoteData);
+args.UpdateInfo = new UpdateInfoEventArgs
+{
+    CurrentVersion = json.version,
+    ChangelogURL = json.changelog,
+    Mandatory = json.mandatory,
+    DownloadURL = json.url
+};
+````
+### JSON file used in the Example above
+
+````json
+{
+    "version":"2.0.0.0", 
+    "url":"http://rbsoft.org/downloads/AutoUpdaterTest.zip", "changelog":"https://github.com/ravibpatel/AutoUpdater.NET/releases", 
+    "mandatory":true 
+}
+````
 
 ## Handling updates manually
 
@@ -130,19 +153,30 @@ private void AutoUpdaterOnCheckForUpdateEvent(UpdateInfoEventArgs args)
     {
         if (args.IsUpdateAvailable)
         {
-            var dialogResult =
-                MessageBox.Show(
-                    string.Format(
-                        "There is new version {0} available. You are using version {1}. Do you want to update the application now?",
-                        args.CurrentVersion, args.InstalledVersion), @"Update Available",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Information);
+            DialogResult dialogResult;
+            if (args.Mandatory)
+            {
+                dialogResult =
+                    MessageBox.Show(
+                        $@"There is new version {args.CurrentVersion} available. You are using version {args.InstalledVersion}. This is required update. Press Ok to begin updating the application.", @"Update Available",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
+            }
+            else
+            {
+                dialogResult =
+                    MessageBox.Show(
+                        $@"There is new version {args.CurrentVersion} available. You are using version {
+                                args.InstalledVersion
+                            }. Do you want to update the application now?", @"Update Available",
+                        MessageBoxButtons.YesNo,
+                        MessageBoxIcon.Information);
+            }
 
             if (dialogResult.Equals(DialogResult.Yes))
             {
                 try
                 {
-                    //You can use Download Update dialog used by AutoUpdater.NET to download the update.
                     if (AutoUpdater.DownloadUpdate())
                     {
                         Application.Exit();
@@ -177,3 +211,4 @@ When you do this it will execute the code in above event when AutoUpdater.Start 
 * ChangelogURL (string) : URL of the webpage specifying changes in the new update.
 * CurrentVersion (Version) : Newest version of the application available to download.
 * InstalledVersion (Version) : Version of the application currently installed on the user's PC.
+* Mandatory (bool) : Shows if the update is required or optional.
