@@ -69,11 +69,6 @@ namespace AutoUpdaterDotNET
         public static String AppCastURL;
 
         /// <summary>
-        ///     Crediential in .htaccess file for extra security if there is any
-        /// </summary>
-        public static NetworkCredential Credential;
-
-        /// <summary>
         ///     Opens the download url in default browser if true. Very usefull if you have portable application.
         /// </summary>
         public static bool OpenDownloadPage;
@@ -109,6 +104,11 @@ namespace AutoUpdaterDotNET
         ///     AutoUpdater.NET will report errors if this is true.
         /// </summary>
         public static bool ReportErrors = false;
+
+        /// <summary>
+        ///     Set Proxy server to use for all the web requests in AutoUpdater.NET.
+        /// </summary>
+        public static WebProxy Proxy;
 
         /// <summary>
         ///     Set if RemindLaterAt interval should be in Minutes, Hours or Days.
@@ -191,17 +191,17 @@ namespace AutoUpdaterDotNET
                                 {
                                     Application.EnableVisualStyles();
                                 }
-                                Thread thread = new Thread(new ThreadStart(delegate
+                                if (Thread.CurrentThread.GetApartmentState().Equals(ApartmentState.STA))
                                 {
-                                    var updateForm = new UpdateForm();
-                                    if (updateForm.ShowDialog().Equals(DialogResult.OK))
-                                    {
-                                        Exit();
-                                    }
-                                }));
-                                thread.CurrentCulture = thread.CurrentUICulture = CurrentCulture;
-                                thread.SetApartmentState(ApartmentState.STA);
-                                thread.Start();
+                                    ShowUpdateForm();
+                                }
+                                else
+                                {
+                                    Thread thread = new Thread(ShowUpdateForm);
+                                    thread.CurrentCulture = thread.CurrentUICulture = CurrentCulture;
+                                    thread.SetApartmentState(ApartmentState.STA);
+                                    thread.Start();
+                                }
                                 return;
                             }
                             else
@@ -228,6 +228,15 @@ namespace AutoUpdaterDotNET
             Running = false;
         }
 
+        private static void ShowUpdateForm()
+        {
+            var updateForm = new UpdateForm();
+            if (updateForm.ShowDialog().Equals(DialogResult.OK))
+            {
+                Exit();
+            }
+        }
+
         private static void BackgroundWorkerDoWork(object sender, DoWorkEventArgs e)
         {
             e.Cancel = true;
@@ -251,17 +260,18 @@ namespace AutoUpdaterDotNET
             InstalledVersion = mainAssembly.GetName().Version;
 
             var webRequest = WebRequest.Create(AppCastURL);
-            if (Credential != null)
-                webRequest.Credentials = Credential;
             webRequest.CachePolicy = new HttpRequestCachePolicy(HttpRequestCacheLevel.NoCacheNoStore);
-
+            if (Proxy != null)
+            {
+                webRequest.Proxy = Proxy;
+            }
             WebResponse webResponse;
 
             try
             {
                 webResponse = webRequest.GetResponse();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 e.Cancel = false;
                 return;
@@ -275,7 +285,16 @@ namespace AutoUpdaterDotNET
 
                 if (appCastStream != null)
                 {
-                    receivedAppCastDocument.Load(appCastStream);
+                    try
+                    {
+                        receivedAppCastDocument.Load(appCastStream);
+                    }
+                    catch (XmlException)
+                    {
+                        e.Cancel = false;
+                        webResponse.Close();
+                        return;
+                    }
                 }
                 else
                 {
@@ -432,7 +451,8 @@ namespace AutoUpdaterDotNET
 
             if (IsWinFormsApplication)
             {
-                Application.Exit();
+                MethodInvoker methodInvoker = Application.Exit;
+                methodInvoker.Invoke();
             }
         #if NETWPF
             else if (System.Windows.Application.Current != null)
@@ -459,16 +479,28 @@ namespace AutoUpdaterDotNET
         internal static void SetTimer(DateTime remindLater)
         {
             TimeSpan timeSpan = remindLater - DateTime.Now;
+
+            var context = SynchronizationContext.Current;
+
             _remindLaterTimer = new System.Timers.Timer
             {
                 Interval = (int) timeSpan.TotalMilliseconds,
+                AutoReset = false
             };
+
             _remindLaterTimer.Elapsed += delegate
             {
-                _remindLaterTimer.Stop();
                 _remindLaterTimer = null;
-                Start();
+                if (context != null)
+                {
+                    context.Send(state => Start(), null);
+                }
+                else
+                {
+                    Start();
+                }
             };
+
             _remindLaterTimer.Start();
         }
 
