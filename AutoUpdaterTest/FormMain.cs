@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Globalization;
+using System.Net;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,12 +25,16 @@ namespace AutoUpdaterTest
         {
             //Uncomment below lines to handle parsing logic of non XML AppCast file.
 
-            //AutoUpdater.Start("http://rbsoft.org/updates/AutoUpdaterTest.json");
             //AutoUpdater.ParseUpdateInfoEvent += AutoUpdaterOnParseUpdateInfoEvent;
+            //AutoUpdater.Start("https://rbsoft.org/updates/AutoUpdaterTest.json");
+
+            //Uncomment below line to run update process using non administrator account.
+
+            //AutoUpdater.RunUpdateAsAdmin = false;
 
             //Uncomment below line to see russian version
 
-            //AutoUpdater.CurrentCulture = CultureInfo.CreateSpecificCulture("ru");
+            //Thread.CurrentThread.CurrentCulture = Thread.CurrentThread.CurrentUICulture = CultureInfo.CreateSpecificCulture("ru");
 
             //If you want to open download page when user click on download button uncomment below line.
 
@@ -57,21 +62,43 @@ namespace AutoUpdaterTest
 
             //AutoUpdater.ReportErrors = true;
 
+            //Want to handle how your application will exit when application finished downloading then uncomment below line.
+
+            AutoUpdater.ApplicationExitEvent += AutoUpdater_ApplicationExitEvent;
+
             //Want to handle update logic yourself then uncomment below line.
 
             //AutoUpdater.CheckForUpdateEvent += AutoUpdaterOnCheckForUpdateEvent;
 
-            //AutoUpdater.Start("http://rbsoft.org/updates/AutoUpdaterTest.xml");
+            //Want to use XML and Update file served only through Proxy.
+
+            //var proxy = new WebProxy("localproxyIP:8080", true) {Credentials = new NetworkCredential("domain\\user", "password")};
+
+            //AutoUpdater.Proxy = proxy;
 
             //Want to check for updates frequently then uncomment following lines.
 
-            //System.Timers.Timer timer = new System.Timers.Timer { Interval = 2 * 60 * 1000 };
+            //System.Timers.Timer timer = new System.Timers.Timer
+            //{
+            //    Interval = 2 * 60 * 1000,
+            //    SynchronizingObject = this
+            //};
             //timer.Elapsed += delegate
             //{
-            //    AutoUpdater.Start("http://rbsoft.org/updates/AutoUpdaterTest.xml");
+            //    AutoUpdater.Start("https://rbsoft.org/updates/AutoUpdaterTest.xml");
             //};
             //timer.Start();
+
+            AutoUpdater.Start("https://rbsoft.org/updates/AutoUpdaterTest.xml");
         }
+
+        private void AutoUpdater_ApplicationExitEvent()
+        {
+            Text = @"Closing application...";
+            Thread.Sleep(5000);
+            Application.Exit();
+        }
+
 
         private void AutoUpdaterOnParseUpdateInfoEvent(ParseUpdateInfoEventArgs args)
         {
@@ -144,9 +171,21 @@ namespace AutoUpdaterTest
             }
         }
 
-        private void buttonCheckForUpdate_Click(object sender, EventArgs e)
+        private void ButtonCheckForUpdate_Click(object sender, EventArgs e)
         {
-            AutoUpdater.Start("http://rbsoft.org/updates/AutoUpdaterTest.xml");
+
+            //Uncomment below lines to select download path where update is saved.
+
+            //FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog();
+            //if (folderBrowserDialog.ShowDialog().Equals(DialogResult.OK))
+            //{
+            //    AutoUpdater.DownloadPath = folderBrowserDialog.SelectedPath;
+            //    AutoUpdater.Mandatory = true;
+            //    AutoUpdater.Start("https://rbsoft.org/updates/AutoUpdaterTest.xml");
+            //}
+
+            AutoUpdater.Mandatory = true;
+            AutoUpdater.Start("https://rbsoft.org/updates/AutoUpdaterTest.xml");
         }
     }
 }

@@ -36,17 +36,23 @@
             // 
             // progressBar
             // 
-            this.progressBar.Location = new System.Drawing.Point(86, 53);
+            this.progressBar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.progressBar.Location = new System.Drawing.Point(96, 44);
+            this.progressBar.Margin = new System.Windows.Forms.Padding(5);
             this.progressBar.Name = "progressBar";
-            this.progressBar.Size = new System.Drawing.Size(446, 23);
+            this.progressBar.Size = new System.Drawing.Size(396, 35);
             this.progressBar.TabIndex = 0;
             // 
             // pictureBoxIcon
             // 
+            this.pictureBoxIcon.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left)));
             this.pictureBoxIcon.Image = global::ZipExtractor.Properties.Resources.ZipExtractor;
-            this.pictureBoxIcon.Location = new System.Drawing.Point(12, 12);
+            this.pictureBoxIcon.Location = new System.Drawing.Point(14, 14);
+            this.pictureBoxIcon.Margin = new System.Windows.Forms.Padding(5);
             this.pictureBoxIcon.Name = "pictureBoxIcon";
-            this.pictureBoxIcon.Size = new System.Drawing.Size(64, 64);
+            this.pictureBoxIcon.Size = new System.Drawing.Size(72, 72);
             this.pictureBoxIcon.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
             this.pictureBoxIcon.TabIndex = 2;
             this.pictureBoxIcon.TabStop = false;
@@ -54,26 +60,31 @@
             // labelInformation
             // 
             this.labelInformation.AutoSize = true;
-            this.labelInformation.Font = new System.Drawing.Font("Segoe UI", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Pixel, ((byte)(0)));
-            this.labelInformation.Location = new System.Drawing.Point(82, 12);
+            this.labelInformation.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.labelInformation.Location = new System.Drawing.Point(93, 14);
+            this.labelInformation.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.labelInformation.Name = "labelInformation";
-            this.labelInformation.Size = new System.Drawing.Size(78, 19);
+            this.labelInformation.Size = new System.Drawing.Size(68, 15);
             this.labelInformation.TabIndex = 3;
             this.labelInformation.Text = "Extracting...";
             // 
             // FormMain
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(544, 88);
+            this.AutoSize = true;
+            this.ClientSize = new System.Drawing.Size(506, 100);
             this.Controls.Add(this.labelInformation);
             this.Controls.Add(this.pictureBoxIcon);
             this.Controls.Add(this.progressBar);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
+            this.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.Margin = new System.Windows.Forms.Padding(5);
             this.MaximizeBox = false;
-            this.MinimizeBox = false;		
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            this.MinimizeBox = false;
             this.Name = "FormMain";
+            this.ShowIcon = false;
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Installing update...";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FormMain_FormClosing);
             this.Shown += new System.EventHandler(this.FormMain_Shown);

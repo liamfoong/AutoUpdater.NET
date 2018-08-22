@@ -21,7 +21,7 @@ namespace ZipExtractor
         private void FormMain_Shown(object sender, EventArgs e)
         {
             string[] args = Environment.GetCommandLineArgs();
-            if (args.Length.Equals(3))
+            if (args.Length >= 3)
             {
                 foreach (var process in Process.GetProcesses())
                 {
@@ -85,7 +85,12 @@ namespace ZipExtractor
                         labelInformation.Text = @"Finished";
                         try
                         {
-                            Process.Start(args[2]);
+                            ProcessStartInfo processStartInfo = new ProcessStartInfo(args[2]);
+                            if (args.Length > 3)
+                            {
+                                processStartInfo.Arguments = args[3];
+                            }
+                            Process.Start(processStartInfo);
                         }
                         catch (Win32Exception exception)
                         {
@@ -101,7 +106,7 @@ namespace ZipExtractor
 
         private void FormMain_FormClosing(object sender, FormClosingEventArgs e)
         {
-            _backgroundWorker.CancelAsync();
+            _backgroundWorker?.CancelAsync();
         }
     }
 }

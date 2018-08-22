@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
-using System.Reflection;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
@@ -45,8 +44,8 @@ namespace AutoUpdaterDotNET
 
         public sealed override string Text
         {
-            get => base.Text;
-            set => base.Text = value;
+            get { return  base.Text; }
+            set { base.Text = value; }
         }
 
         private void UseLatestIE()
@@ -76,7 +75,7 @@ namespace AutoUpdaterDotNET
                     Registry.CurrentUser.OpenSubKey(
                         @"SOFTWARE\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_BROWSER_EMULATION", true))
                 {
-                    registryKey?.SetValue(Path.GetFileName(Assembly.GetEntryAssembly().Location), ieValue,
+                    registryKey?.SetValue(Path.GetFileName(Process.GetCurrentProcess().MainModule.FileName), ieValue,
                         RegistryValueKind.DWord);
                 }
             }

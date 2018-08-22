@@ -80,6 +80,7 @@
             // comboBoxRemindLater
             // 
             resources.ApplyResources(this.comboBoxRemindLater, "comboBoxRemindLater");
+            this.comboBoxRemindLater.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBoxRemindLater.FormattingEnabled = true;
             this.comboBoxRemindLater.Items.AddRange(new object[] {
             resources.GetString("comboBoxRemindLater.Items"),
@@ -117,7 +118,7 @@
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.tableLayoutPanel);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "RemindLaterForm";

@@ -9,7 +9,6 @@ using System.Reflection;
 using System.Threading;
 using System.Windows.Forms;
 using System.Xml;
-using System.Xml.Serialization;
 using AutoUpdaterDotNET.Properties;
 using Microsoft.Win32;
 
@@ -47,9 +46,13 @@ namespace AutoUpdaterDotNET
 
         internal static String DownloadURL;
 
-        internal static bool Mandatory;
+        internal static String InstallerArgs;
 
         internal static String RegistryLocation;
+
+        internal static String Checksum;
+
+        internal static String HashingAlgorithm;
 
         internal static Version CurrentVersion;
 
@@ -58,6 +61,11 @@ namespace AutoUpdaterDotNET
         internal static bool IsWinFormsApplication;
 
         internal static bool Running;
+
+        /// <summary>
+        ///     Set it to folder path where you want to download the update file. If not provided then it defaults to Temp folder.
+        /// </summary>
+        public static String DownloadPath;
 
         /// <summary>
         ///     Set the Application Title shown in Update dialog. Although AutoUpdater.NET will get it automatically, you can set this property if you like to give custom Title.
@@ -73,12 +81,6 @@ namespace AutoUpdaterDotNET
         ///     Opens the download url in default browser if true. Very usefull if you have portable application.
         /// </summary>
         public static bool OpenDownloadPage;
-        
-        /// <summary>
-        ///     Sets the current culture of the auto update notification window. Set this value if your application supports
-        ///     functionalty to change the languge of the application.
-        /// </summary>
-        public static CultureInfo CurrentCulture;
 
         /// <summary>
         ///     If this is true users can see the skip button.
@@ -107,6 +109,16 @@ namespace AutoUpdaterDotNET
         public static bool ReportErrors = false;
 
         /// <summary>
+        ///     Set this to false if your application doesn't need administrator privileges to replace the old version.
+        /// </summary>
+        public static bool RunUpdateAsAdmin = true;
+
+        ///<summary>
+        ///     Set this to true if you want to ignore previously assigned Remind Later and Skip settings. It will also hide Remind Later and Skip buttons.
+        /// </summary>
+        public static bool Mandatory;
+
+        /// <summary>
         ///     Set Proxy server to use for all the web requests in AutoUpdater.NET.
         /// </summary>
         public static WebProxy Proxy;
@@ -115,6 +127,16 @@ namespace AutoUpdaterDotNET
         ///     Set if RemindLaterAt interval should be in Minutes, Hours or Days.
         /// </summary>
         public static RemindLaterFormat RemindLaterTimeSpan = RemindLaterFormat.Days;
+
+        /// <summary>
+        ///     A delegate type to handle how to exit the application after update is downloaded.
+        /// </summary>
+        public delegate void ApplicationExitEventHandler();
+
+        /// <summary>
+        ///     An event that developers can use to exit the application gracefully.
+        /// </summary>
+        public static event ApplicationExitEventHandler ApplicationExitEvent;
 
         /// <summary>
         ///     A delegate type for hooking up update notifications.
@@ -154,14 +176,15 @@ namespace AutoUpdaterDotNET
         /// <param name="myAssembly">Assembly to use for version checking.</param>
         public static void Start(String appCast, Assembly myAssembly = null)
         {
+            if (Mandatory && _remindLaterTimer != null)
+            {
+                _remindLaterTimer.Stop();
+                _remindLaterTimer.Close();
+                _remindLaterTimer = null;
+            }
             if (!Running && _remindLaterTimer == null)
             {
                 Running = true;
-
-                if (CurrentCulture == null)
-                {
-                    CurrentCulture = CultureInfo.CurrentCulture;
-                }
 
                 AppCastURL = appCast;
 
@@ -181,9 +204,9 @@ namespace AutoUpdaterDotNET
         {
             if (!runWorkerCompletedEventArgs.Cancelled)
             {
-                if (runWorkerCompletedEventArgs.Result is DateTime remindLaterTime)
+                if (runWorkerCompletedEventArgs.Result is DateTime)
                 {
-                    SetTimer(remindLaterTime);
+                    SetTimer((DateTime)runWorkerCompletedEventArgs.Result);
                 }
                 else
                 {
@@ -209,9 +232,10 @@ namespace AutoUpdaterDotNET
                                 else
                                 {
                                     Thread thread = new Thread(ShowUpdateForm);
-                                    thread.CurrentCulture = thread.CurrentUICulture = CurrentCulture;
+                                    thread.CurrentCulture = thread.CurrentUICulture = CultureInfo.CurrentCulture;
                                     thread.SetApartmentState(ApartmentState.STA);
                                     thread.Start();
+                                    thread.Join();
                                 }
                                 return;
                             }
@@ -239,7 +263,7 @@ namespace AutoUpdaterDotNET
             Running = false;
         }
 
-        private static void ShowUpdateForm()
+        public static void ShowUpdateForm()
         {
             var updateForm = new UpdateForm();
             if (updateForm.ShowDialog().Equals(DialogResult.OK))
@@ -311,7 +335,7 @@ namespace AutoUpdaterDotNET
                             receivedAppCastDocument.Load(appCastStream);
 
                             XmlNodeList appCastItems = receivedAppCastDocument.SelectNodes("item");
-                            
+
                             args = new UpdateInfoEventArgs();
 
                             if (appCastItems != null)
@@ -320,7 +344,14 @@ namespace AutoUpdaterDotNET
                                 {
                                     XmlNode appCastVersion = item.SelectSingleNode("version");
 
-                                    Version.TryParse(appCastVersion?.InnerText, out CurrentVersion);
+                                    try
+                                    {
+                                        CurrentVersion = new Version(appCastVersion?.InnerText);
+                                    }
+                                    catch (Exception)
+                                    {
+                                        CurrentVersion = null;
+                                    }
 
                                     args.CurrentVersion = CurrentVersion;
 
@@ -332,11 +363,24 @@ namespace AutoUpdaterDotNET
 
                                     args.DownloadURL = appCastUrl?.InnerText;
 
-                                    XmlNode mandatory = item.SelectSingleNode("mandatory");
+                                    if (Mandatory.Equals(false))
+                                    {
+                                        XmlNode mandatory = item.SelectSingleNode("mandatory");
 
-                                    Boolean.TryParse(mandatory?.InnerText, out Mandatory);
+                                        Boolean.TryParse(mandatory?.InnerText, out Mandatory);
+                                    }
 
                                     args.Mandatory = Mandatory;
+
+                                    XmlNode appArgs = item.SelectSingleNode("args");
+
+                                    args.InstallerArgs = appArgs?.InnerText;
+
+                                    XmlNode checksum = item.SelectSingleNode("checksum");
+
+                                    args.HashingAlgorithm = checksum?.Attributes["algorithm"]?.InnerText;
+
+                                    args.Checksum = checksum?.InnerText;
                                 }
                             }
                         }
@@ -359,6 +403,10 @@ namespace AutoUpdaterDotNET
             if (args.CurrentVersion == null || string.IsNullOrEmpty(args.DownloadURL))
             {
                 webResponse.Close();
+                if (ReportErrors)
+                {
+                    throw new InvalidDataException();
+                }
                 return;
             }
 
@@ -366,6 +414,10 @@ namespace AutoUpdaterDotNET
             ChangelogURL = args.ChangelogURL = GetURL(webResponse.ResponseUri, args.ChangelogURL);
             DownloadURL = args.DownloadURL = GetURL(webResponse.ResponseUri, args.DownloadURL);
             Mandatory = args.Mandatory;
+            InstallerArgs = args.InstallerArgs ?? String.Empty;
+            HashingAlgorithm = args.HashingAlgorithm ?? "MD5";
+            Checksum = args.Checksum ?? String.Empty;
+
             webResponse.Close();
 
             if (Mandatory)
@@ -442,31 +494,62 @@ namespace AutoUpdaterDotNET
             return url;
         }
 
+        /// <summary>
+        /// Detects and exits all instances of running assembly, including current.
+        /// </summary>
         private static void Exit()
         {
-            var currentProcess = Process.GetCurrentProcess();
-            foreach (var process in Process.GetProcessesByName(currentProcess.ProcessName))
+            if (ApplicationExitEvent != null)
             {
-                if (process.Id != currentProcess.Id)
-                {
-                    process.Kill();
-                }
+                ApplicationExitEvent();
             }
-
-            if (IsWinFormsApplication)
-            {
-                MethodInvoker methodInvoker = Application.Exit;
-                methodInvoker.Invoke();
-            }
-        #if NETWPF
-            else if (System.Windows.Application.Current != null)
-            {
-                System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() => System.Windows.Application.Current.Shutdown()));
-            }
-        #endif
             else
             {
-                Environment.Exit(0);
+                var currentProcess = Process.GetCurrentProcess();
+                foreach (var process in Process.GetProcessesByName(currentProcess.ProcessName))
+                {
+                    string processPath;
+                    try
+                    {
+                        processPath = process.MainModule.FileName;
+                    }
+                    catch (Win32Exception)
+                    {
+                        // Current process should be same as processes created by other instances of the application so it should be able to access modules of other instances. 
+                        // This means this is not the process we are looking for so we can safely skip this.
+                        continue;
+                    }
+
+                    if (process.Id != currentProcess.Id &&
+                        currentProcess.MainModule.FileName == processPath) //get all instances of assembly except current
+                    {
+                        if (process.CloseMainWindow())
+                        {
+                            process.WaitForExit((int) TimeSpan.FromSeconds(10).TotalMilliseconds); //give some time to process message
+                        }
+                        if (!process.HasExited)
+                        {
+                            process.Kill(); //TODO show UI message asking user to close program himself instead of silently killing it
+                        }
+                    }
+                }
+
+                if (IsWinFormsApplication)
+                {
+                    MethodInvoker methodInvoker = Application.Exit;
+                    methodInvoker.Invoke();
+                }
+#if NETWPF
+                else if (System.Windows.Application.Current != null)
+                {
+                    System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+                        System.Windows.Application.Current.Shutdown()));
+                }
+#endif
+                else
+                {
+                    Environment.Exit(0);
+                }
             }
         }
 
@@ -567,6 +650,21 @@ namespace AutoUpdaterDotNET
         ///     Shows if the update is required or optional.
         /// </summary>
         public bool Mandatory { get; set; }
+
+        /// <summary>
+        ///     Command line arguments used by Installer.
+        /// </summary>
+        public string InstallerArgs { get; set; }
+
+        /// <summary>
+        ///     Checksum of the update file.
+        /// </summary>
+        public string Checksum { get; set; }
+
+        /// <summary>
+        ///     Hash algorithm that generated the checksum provided in the XML file.
+        /// </summary>
+        public string HashingAlgorithm { get; set; }
     }
 
     /// <summary>
