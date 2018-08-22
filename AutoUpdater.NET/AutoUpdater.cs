@@ -124,6 +124,10 @@ namespace AutoUpdaterDotNET
         public static WebProxy Proxy;
 
         /// <summary>
+        ///     Set Credential to use for all the web requests in AutoUpdater.NET.
+        /// </summary>
+        public static NetworkCredential Credential;
+        /// <summary>
         ///     Set if RemindLaterAt interval should be in Minutes, Hours or Days.
         /// </summary>
         public static RemindLaterFormat RemindLaterTimeSpan = RemindLaterFormat.Days;
@@ -295,6 +299,7 @@ namespace AutoUpdaterDotNET
             InstalledVersion = mainAssembly.GetName().Version;
 
             var webRequest = WebRequest.Create(AppCastURL);
+            webRequest.Headers.Add("Authorization", "Basic " + Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes($"{Credential.UserName}:{Credential.Password}")));
             webRequest.CachePolicy = new HttpRequestCachePolicy(HttpRequestCacheLevel.NoCacheNoStore);
             if (Proxy != null)
             {

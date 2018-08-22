@@ -85,7 +85,8 @@ namespace AutoUpdaterDotNET
         {
             if (!HideReleaseNotes)
             {
-                webBrowser.Navigate(AutoUpdater.ChangelogURL);
+                var authHeader = "Authorization: Basic " + Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes($"{AutoUpdater.Credential.UserName}:{AutoUpdater.Credential.Password}"));
+                webBrowser.Navigate(AutoUpdater.ChangelogURL, "", null, authHeader);
             }
         }
 

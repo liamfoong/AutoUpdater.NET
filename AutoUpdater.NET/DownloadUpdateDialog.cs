@@ -53,6 +53,13 @@ namespace AutoUpdaterDotNET
                 }
             }
 
+            // Assign Credentials
+            var credentialCache = new CredentialCache();
+            credentialCache.Add(uri, // request url's host
+                "Basic", // authentication type. hopefully they don't change it.
+                AutoUpdater.Credential); // credentials 
+            _webClient.UseDefaultCredentials = true;
+            _webClient.Credentials = credentialCache;
 
             _webClient.DownloadProgressChanged += OnDownloadProgressChanged;
 
